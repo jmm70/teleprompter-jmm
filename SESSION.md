@@ -1,7 +1,7 @@
 # Sessió: Teleprompter (2026-11-27)
 
 ## Objectiu
-Teleprompter web per pujar un guió, amb play/pausa, velocitat, i el text desplaçant-se
+Teleprompter web per obrir un guió, amb play/pausa, velocitat, i el text desplaçant-se
 i engrandint-se a la línia central de lectura. Desplegament a Vercel.
 
 ## Decisions
@@ -12,14 +12,14 @@ i engrandint-se a la línia central de lectura. Desplegament a Vercel.
 - Mode clar per defecte; l'elecció es guarda a `localStorage` (clau `theme`).
 
 ## Funcionalitat final
-- Pujar arxiu, Play/Pause, Reinicia.
+- Obrir arxiu, Play/Pause, Reinicia.
 - Velocitat 10–300 px/s, mida de lletra 28–120 px (conserva la posició de lectura).
 - Línia de lectura central: efecte d'escala i opacitat segons la distància al centre
   (constants `MIN_SCALE`, `MIN_OPACITY`, `PUSH` al JS).
 - Franja de lectura alta amb les línies veïnes empeses cap a fora.
 - Mode clar / fosc.
 - Cronòmetre gran (a dalt a la dreta): compta amunt, s'engega amb Play, s'atura amb Pause,
-  es posa a zero amb Reinicia o en pujar un arxiu nou.
+  es posa a zero amb Reinicia o en obrir un arxiu nou.
 - Roda del ratolí per moure el text a mà.
 
 ## Provat
