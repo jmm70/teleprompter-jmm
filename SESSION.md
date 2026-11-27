@@ -36,6 +36,7 @@ cronòmetre, botó Prova, durada estimada. Sense errors de consola. No provat: s
 - Desplegat a **Vercel** (des del repo de GitHub; cada `git push` a `main` el redesplega).
 - Llicència MIT (`LICENSE`), titular Juan Mateu, 2026. Cobreix tot el repo, `benjamin-itaca.md` inclòs.
 - `benjamin-itaca.md` és públic (al repo i servit pel botó Prova a Vercel).
+  És un text de l'autor ja publicat al seu Substack. El `README.md` l'exclou de la MIT (tots els drets reservats).
 - Qualsevol pot veure, clonar i fer fork/pull requests; només el propietari pot fer push.
 - Servidor local de prova: `python3 -m http.server 8000` a la carpeta del projecte (no cal per a Vercel).
 
