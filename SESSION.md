@@ -1,4 +1,4 @@
-# Sessió: Teleprompter (2026-11-27)
+# Sessió: Teleprompter (2026-11-27 / 2026-11-28)
 
 ## Objectiu
 Teleprompter web per obrir un guió, amb play/pausa, velocitat, i el text desplaçant-se
@@ -21,15 +21,22 @@ i engrandint-se a la línia central de lectura. Desplegament a Vercel.
 - Cronòmetre gran (a dalt a la dreta): compta amunt, s'engega amb Play, s'atura amb Pause,
   es posa a zero amb Reinicia o en obrir un arxiu nou.
 - Roda del ratolí per moure el text a mà.
+- Botó **Prova** (a la dreta de la barra): carrega `benjamin-itaca.md` (text de mostra).
+  Fa un `fetch`, per tant cal servidor (no funciona amb `file://`); a Vercel va bé.
+- **Durada estimada** i **Queda** sota el cronòmetre: distància de desplaçament / velocitat (px/s).
+  Depèn de la mida de lletra i l'amplada de pantalla, no és una estimació en paraules per minut.
+- El botó de càrrega es diu "Obre un arxiu" (no "Puja", perquè no es guarda enlloc).
 
 ## Provat
 Amb Chrome (Playwright): càrrega d'arxiu, play/pausa, canvi de mida, tema clar/fosc,
-cronòmetre. Sense errors de consola. No provat: slider de velocitat en moviment, mòbil.
+cronòmetre, botó Prova, durada estimada. Sense errors de consola. No provat: slider de velocitat en moviment, mòbil.
 
 ## Estat
-- Repo privat: https://github.com/jmm70/teleprompter-jmm (branca `main`, 1 commit).
-- `index.html` està complet al commit (inclou mode clar, català i cronòmetre).
-  Aquest `SESSION.md` encara no s'ha afegit al repo.
+- Repo privat: https://github.com/jmm70/teleprompter-jmm (branca `main`).
+- Llicència MIT (`LICENSE`), titular Juan Mateu, 2026. Cobreix tot el repo, `benjamin-itaca.md` inclòs.
+- Tot el codi és pujat; l'últim commit abans d'aquesta actualització és `1c763f7`.
+- Si el repo es fa públic: qualsevol pot veure'l, clonar-lo i fer fork/pull requests, però només
+  el propietari pot fer push (tret de col·laboradors). Cal decidir si `benjamin-itaca.md` ha de quedar públic.
 - Pendent: desplegar a Vercel (importar el repo des del panell, o `npx vercel --prod`).
 - Servidor local de prova: `python3 -m http.server 8000` a la carpeta del projecte.
 
