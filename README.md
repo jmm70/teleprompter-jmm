@@ -21,4 +21,5 @@ i obre http://localhost:8000.
 
 - **Codi** (`index.html`): [MIT](LICENSE).
 - **Text de mostra** (`benjamin-itaca.md`): © Juan Mateu, tots els drets reservats.
+  Publicat originalment a [Desacord](https://desacord.substack.com/p/el-temps-furtat-benjamin-i-el-problema).
   No està cobert per la llicència MIT; s'inclou només com a exemple per provar l'aplicació.
