@@ -32,13 +32,12 @@ Amb Chrome (Playwright): càrrega d'arxiu, play/pausa, canvi de mida, tema clar/
 cronòmetre, botó Prova, durada estimada. Sense errors de consola. No provat: slider de velocitat en moviment, mòbil.
 
 ## Estat
-- Repo privat: https://github.com/jmm70/teleprompter-jmm (branca `main`).
+- Repo **públic**: https://github.com/jmm70/teleprompter-jmm (branca `main`).
+- Desplegat a **Vercel** (des del repo de GitHub; cada `git push` a `main` el redesplega).
 - Llicència MIT (`LICENSE`), titular Juan Mateu, 2026. Cobreix tot el repo, `benjamin-itaca.md` inclòs.
-- Tot el codi és pujat; l'últim commit abans d'aquesta actualització és `1c763f7`.
-- Si el repo es fa públic: qualsevol pot veure'l, clonar-lo i fer fork/pull requests, però només
-  el propietari pot fer push (tret de col·laboradors). Cal decidir si `benjamin-itaca.md` ha de quedar públic.
-- Pendent: desplegar a Vercel (importar el repo des del panell, o `npx vercel --prod`).
-- Servidor local de prova: `python3 -m http.server 8000` a la carpeta del projecte.
+- `benjamin-itaca.md` és públic (al repo i servit pel botó Prova a Vercel).
+- Qualsevol pot veure, clonar i fer fork/pull requests; només el propietari pot fer push.
+- Servidor local de prova: `python3 -m http.server 8000` a la carpeta del projecte (no cal per a Vercel).
 
 ## Idees futures
 - Cronòmetre amb compte enrere (durada prevista).
