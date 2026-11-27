@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teleprompter</title>
+<style>
+  :root { --fs: 56px; --bg:#000; --fg:#fff; --muted:#aaa; --accent:#ffd600; --accent-fg:#000;
+    --accent-rgb:255,214,0; --bar:#111; --bar-border:#2a2a2a; --btn:#262626; --btn-hover:#333; --btn-border:#3a3a3a; --label:#bbb; }
+  :root[data-theme=light] { --bg:#f7f5ef; --fg:#111; --muted:#666; --accent:#1a56db; --accent-fg:#fff;
+    --accent-rgb:26,86,219; --bar:#ffffff; --bar-border:#d8d5cc; --btn:#efede6; --btn-hover:#e3e0d6; --btn-border:#cfcbc0; --label:#555; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+
+  #stage { position: fixed; inset: 0 0 76px 0; overflow: hidden; }
+  #content { position: absolute; left: 50%; top: 0; will-change: transform; }
+  .line { white-space: nowrap; text-align: center; font-size: var(--fs); line-height: 1.5;
+    font-weight: 600; transform-origin: center center; will-change: transform, opacity; }
+  .line.gap { height: calc(var(--fs) * 0.8); }
+
+  /* reading guide */
+  #guide { position: absolute; left: 0; right: 0; top: 50%; height: calc(var(--fs) * 2.3);
+    transform: translateY(-50%); pointer-events: none;
+    border-top: 1px solid rgba(var(--accent-rgb),.45); border-bottom: 1px solid rgba(var(--accent-rgb),.45);
+    background: rgba(var(--accent-rgb),.06); }
+  #guide::before, #guide::after { content: ""; position: absolute; top: 50%; width: 0; height: 0;
+    border: 10px solid transparent; transform: translateY(-50%); }
+  #guide::before { left: 8px; border-left-color: var(--accent); }
+  #guide::after { right: 8px; border-right-color: var(--accent); }
+
+  #timer { position: absolute; top: 14px; right: 22px; z-index: 2; font-size: 3.2rem; font-weight: 700;
+    font-variant-numeric: tabular-nums; letter-spacing: .02em; color: var(--fg); opacity: .9;
+    padding: 4px 16px; border-radius: 12px; background: var(--bar); border: 1px solid var(--bar-border); }
+  #timer.running { border-color: var(--accent); }
+
+  #empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; color: var(--muted); text-align: center; padding: 24px; }
+  #empty strong { color: var(--fg); font-size: 1.4rem; }
+
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; height: 76px; display: flex; align-items: center;
+    gap: 18px; padding: 0 20px; background: var(--bar); border-top: 1px solid var(--bar-border); flex-wrap: nowrap;
+    overflow-x: auto; }
+  button, .btn { background: var(--btn); color: var(--fg); border: 1px solid var(--btn-border); border-radius: 8px;
+    padding: 10px 16px; font: inherit; cursor: pointer; white-space: nowrap; }
+  button:hover, .btn:hover { background: var(--btn-hover); }
+  button:disabled { opacity: .4; cursor: default; }
+  #play { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; min-width: 96px; }
+  #play:hover { filter: brightness(1.12); background: var(--accent); }
+  label { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--label); white-space: nowrap; }
+  input[type=range] { width: 150px; accent-color: var(--accent); }
+  output { min-width: 3.2em; color: var(--fg); font-variant-numeric: tabular-nums; }
+  input[type=file] { display: none; }
+  .spacer { flex: 1; }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="content"></div>
+    <div id="guide"></div>
+    <div id="timer" title="Temps de lectura">00:00</div>
+    <div id="empty"><strong>Puja un arxiu .txt o .md per començar</strong><span>Després prem Play. Pots moure el text a mà amb la roda del ratolí.</span></div>
+  </div>
+
+  <div id="bar">
+    <label class="btn" for="file">Puja un arxiu</label>
+    <input id="file" type="file" accept=".txt,.md,text/plain,text/markdown">
+    <button id="play" disabled>Play</button>
+    <button id="restart" disabled>Reinicia</button>
+    <button id="theme" title="Canvia entre mode clar i fosc">Mode fosc</button>
+    <label>Velocitat <input id="speed" type="range" min="10" max="300" step="5" value="60"><output id="speedOut">60</output></label>
+    <label>Mida de lletra <input id="size" type="range" min="28" max="120" step="2" value="56"><output id="sizeOut">56</output></label>
+  </div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), content = $('content'), empty = $('empty');
+  const playBtn = $('play'), restartBtn = $('restart');
+  const speed = $('speed'), size = $('size');
+
+  let rawText = '';
+  let lines = [];          // {el, center}
+  let scrollY = 0, maxScroll = 0;
+  let playing = false, last = 0;
+  let timerBase = 0, timerStart = 0;   // ms accumulated while paused / when the current run began
+  const timerEl = $('timer');
+
+  function updateTimer() {
+    const ms = timerBase + (playing ? performance.now() - timerStart : 0);
+    const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+    const pad = n => String(n).padStart(2, '0');
+    timerEl.textContent = (h ? h + ':' : '') + pad(m) + ':' + pad(sec);
+  }
+  setInterval(updateTimer, 200);
+
+  const MIN_SCALE = 0.45, MIN_OPACITY = 0.05, PUSH = 0.5;
+
+  function clean(text) {
+    return text.replace(/\r\n?/g, '\n').split('\n').map(l =>
+      l.replace(/^\s{0,3}(#{1,6}|>)\s?/, '')
+       .replace(/^\s*[-*+]\s+/, '• ')
+       .replace(/(\*\*|__|\*|_|`)/g, '')
+       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+       .trimEnd());
+  }
+
+  // Break text into the visual lines the browser would wrap, then render each as its own element.
+  function layout() {
+    content.innerHTML = '';
+    lines = [];
+    if (!rawText) return;
+
+    const width = Math.min(1000, stage.clientWidth - 48);
+    content.style.width = width + 'px';
+    content.style.marginLeft = -width / 2 + 'px';
+
+    const measure = document.createElement('div');
+    measure.style.cssText = 'position:absolute;visibility:hidden;white-space:normal;text-align:center;' +
+      'font-weight:600;line-height:1.5;font-size:var(--fs);width:' + width + 'px';
+    document.body.appendChild(measure);
+
+    const rows = [];
+    for (const para of clean(rawText)) {
+      if (!para.trim()) { rows.push(null); continue; }
+      measure.innerHTML = '';
+      const words = para.trim().split(/\s+/);
+      const spans = words.map((w, i) => {
+        const s = document.createElement('span');
+        s.textContent = w;
+        measure.appendChild(s);
+        if (i < words.length - 1) measure.appendChild(document.createTextNode(' '));
+        return s;
+      });
+      let curTop = null, cur = [];
+      for (const s of spans) {
+        if (curTop !== null && s.offsetTop !== curTop) { rows.push(cur.join(' ')); cur = []; }
+        curTop = s.offsetTop;
+        cur.push(s.textContent);
+      }
+      if (cur.length) rows.push(cur.join(' '));
+    }
+    measure.remove();
+
+    // collapse leading/trailing/duplicate gaps
+    const frag = document.createDocumentFragment();
+    let prevGap = true;
+    for (const r of rows) {
+      const d = document.createElement('div');
+      if (r === null) { if (prevGap) continue; d.className = 'line gap'; prevGap = true; }
+      else { d.className = 'line'; d.textContent = r; prevGap = false; }
+      frag.appendChild(d);
+    }
+    content.appendChild(frag);
+
+    const h = stage.clientHeight;
+    content.style.paddingTop = h / 2 + 'px';
+    content.style.paddingBottom = h / 2 + 'px';
+
+    for (const el of content.children) {
+      if (el.classList.contains('gap')) continue;
+      lines.push({ el, center: el.offsetTop + el.offsetHeight / 2 });
+    }
+    // scroll range: first line center .. last line center
+    maxScroll = lines.length ? lines[lines.length - 1].center - h / 2 : 0;
+    scrollY = Math.min(Math.max(scrollY, lines.length ? lines[0].center - h / 2 : 0), maxScroll);
+  }
+
+  function render() {
+    const h = stage.clientHeight, mid = h / 2, fs = Number(size.value);
+    content.style.transform = `translateY(${-scrollY}px)`;
+    for (const l of lines) {
+      const y = l.center - scrollY;            // position relative to stage top
+      const d = Math.abs(y - mid) / mid;       // 0 at centre, 1 at edge
+      if (d > 1.3) { l.el.style.opacity = 0; continue; }
+      const t = Math.max(0, 1 - d * 1.7);      // focus falloff
+      const k = t * t * (3 - 2 * t);           // smoothstep
+      const scale = MIN_SCALE + (1 - MIN_SCALE) * k;
+      // push lines away from the centre so the reading band has breathing room
+      const push = Math.sign(y - mid) * Math.min(1, d * 5) * PUSH * fs;
+      l.el.style.transform = `translateY(${push.toFixed(1)}px) scale(${scale.toFixed(3)})`;
+      l.el.style.opacity = (MIN_OPACITY + (1 - MIN_OPACITY) * k * k * k).toFixed(3);
+    }
+  }
+
+  function tick(now) {
+    if (!playing) return;
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    scrollY += Number(speed.value) * dt;
+    if (scrollY >= maxScroll) { scrollY = maxScroll; setPlaying(false); }
+    render();
+    requestAnimationFrame(tick);
+  }
+
+  function setPlaying(p) {
+    if (p !== playing) {
+      if (p) timerStart = performance.now(); else timerBase += performance.now() - timerStart;
+    }
+    playing = p;
+    timerEl.classList.toggle('running', p);
+    updateTimer();
+    playBtn.textContent = p ? 'Pause' : 'Play';
+    if (p) {
+      if (scrollY >= maxScroll) scrollY = lines.length ? lines[0].center - stage.clientHeight / 2 : 0;
+      last = performance.now();
+      requestAnimationFrame(tick);
+    }
+  }
+
+  function restart() {
+    setPlaying(false);
+    timerBase = 0; updateTimer();
+    scrollY = lines.length ? lines[0].center - stage.clientHeight / 2 : 0;
+    render();
+  }
+
+  $('file').addEventListener('change', async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    rawText = await f.text();
+    empty.style.display = rawText.trim() ? 'none' : 'flex';
+    setPlaying(false);
+    scrollY = 0;
+    layout();
+    restart();
+    playBtn.disabled = restartBtn.disabled = !lines.length;
+    e.target.value = '';
+  });
+
+  const themeBtn = $('theme');
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    themeBtn.textContent = t === 'light' ? 'Mode fosc' : 'Mode clar';
+    try { localStorage.setItem('theme', t); } catch (e) {}
+  }
+  let saved = null; try { saved = localStorage.getItem('theme'); } catch (e) {}
+  setTheme(saved || 'light');
+  themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'));
+
+  playBtn.addEventListener('click', () => setPlaying(!playing));
+  restartBtn.addEventListener('click', restart);
+
+  speed.addEventListener('input', () => $('speedOut').textContent = speed.value);
+
+  size.addEventListener('input', () => {
+    $('sizeOut').textContent = size.value;
+    document.documentElement.style.setProperty('--fs', size.value + 'px');
+    relayout();
+  });
+
+  // keep reading position when the layout changes (font size / window resize)
+  function relayout() {
+    if (!lines.length) return;
+    const first = lines[0].center, span = (maxScroll + stage.clientHeight / 2) - first || 1;
+    const progress = (scrollY + stage.clientHeight / 2 - first) / span;
+    layout();
+    const f = lines[0].center, s = lines[lines.length - 1].center - f;
+    scrollY = f + progress * s - stage.clientHeight / 2;
+    scrollY = Math.min(Math.max(scrollY, f - stage.clientHeight / 2), maxScroll);
+    render();
+  }
+  window.addEventListener('resize', relayout);
+
+  stage.addEventListener('wheel', e => {
+    if (!lines.length) return;
+    e.preventDefault();
+    const min = lines[0].center - stage.clientHeight / 2;
+    scrollY = Math.min(Math.max(scrollY + e.deltaY, min), maxScroll);
+    render();
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
