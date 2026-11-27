@@ -13,7 +13,7 @@ i engrandint-se a la línia central de lectura. Desplegament a Vercel.
 
 ## Funcionalitat final
 - Obrir arxiu, Play/Pause, Reinicia.
-- Velocitat 10–300 px/s, mida de lletra 28–120 px (conserva la posició de lectura).
+- Velocitat 10–120 px/s, mida de lletra 28–120 px (conserva la posició de lectura).
 - Línia de lectura central: efecte d'escala i opacitat segons la distància al centre
   (constants `MIN_SCALE`, `MIN_OPACITY`, `PUSH` al JS).
 - Franja de lectura alta amb les línies veïnes empeses cap a fora.
