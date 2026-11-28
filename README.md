@@ -5,9 +5,10 @@ amb la línia de lectura ampliada al centre de la pantalla.
 
 - Play / Pause, Reinicia
 - Velocitat (10–120 px/s) i mida de lletra
-- Mode clar i fosc
+- Mode clar i fosc (interruptor sol/lluna; clar per defecte)
 - Cronòmetre i durada estimada de lectura
 - Botó **Prova** per carregar un text de mostra
+- Adaptat a mòbil (barra responsive i desplaçament tàctil)
 
 És un únic `index.html` sense dependències ni build. Per provar-lo en local:
 
